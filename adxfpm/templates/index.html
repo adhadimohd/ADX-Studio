@@ -901,6 +901,33 @@
             border: none;
             color: #fff;
         }
+        /* Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .top-nav a {
+            padding: 7px 20px;
+            border-radius: 6px;
+            color: #aaa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .top-nav a:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .top-nav a.active {
+            color: #fff;
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+        }
     </style>
 </head>
 <body>
@@ -908,6 +935,10 @@
         <header>
             <h1>ADX FPM</h1>
             <p>Passport Photo Processor - AI-Powered Background Removal & Enhancement</p>
+            <nav class="top-nav">
+                <a href="/" class="active">Process</a>
+                <a href="/history">History</a>
+            </nav>
         </header>
 
         <div class="main-content">
@@ -1009,6 +1040,7 @@
                             <div class="retouch-tab" data-tab="eyes" onclick="switchRetouchTab('eyes')">Eyes</div>
                             <div class="retouch-tab" data-tab="clothing" onclick="switchRetouchTab('clothing')">Clothing</div>
                             <div class="retouch-tab" data-tab="lighting" onclick="switchRetouchTab('lighting')">Lighting</div>
+                            <div class="retouch-tab" data-tab="structure" onclick="switchRetouchTab('structure')">Structure</div>
                         </div>
 
                         <!-- Preserve Integrity Option (always visible) -->
@@ -1043,6 +1075,11 @@
                         <!-- Lighting Tab -->
                         <div class="retouch-content" id="lightingContent">
                             <div class="retouch-options" id="lightingOptions"></div>
+                        </div>
+
+                        <!-- Structure Tab -->
+                        <div class="retouch-content" id="structureContent">
+                            <div class="retouch-options" id="structureOptions"></div>
                         </div>
                     </div>
 
@@ -1278,6 +1315,18 @@
                 { name: "Three-Point Lighting", prompt: "Apply professional three-point lighting: key light at 45°, fill light opposite to soften shadows, and backlight/rim to separate subject—balance all for studio-quality clarity." },
                 { name: "Soft Beauty Lighting", prompt: "Apply soft, frontal beauty lighting: large diffused source slightly above eye level, minimal shadows, even skin illumination, ideal for corporate or model headshots." },
                 { name: "Golden Hour Warmth", prompt: "Infuse warm, golden-hour lighting tones: soft directional light with amber hue, long gentle shadows, and luminous skin glow—without altering pose or background." }
+            ],
+            structure: [
+                { name: "Head Orientation", prompt: "Adjust the pose so the head is fully front-facing, eyes looking straight at the camera, neutral and natural facial expression, mouth closed." },
+                { name: "Head Alignment", prompt: "Correct head alignment so it is perfectly vertical, centered, and symmetrical." },
+                { name: "Eye Symmetry", prompt: "Ensure both eyes are level, evenly sized, and horizontally aligned, with equal eyelid visibility and a natural gaze." },
+                { name: "Jawline Balance", prompt: "Subtly correct jawline asymmetry so both sides appear even, straight, and naturally balanced without slimming or reshaping." },
+                { name: "Nose Alignment", prompt: "Align the nose bridge and tip to the vertical centerline of the face, correcting minor deviation while keeping natural proportions." },
+                { name: "Mouth Symmetry", prompt: "Adjust lip position so the mouth is horizontally level, centered, and symmetrical, with natural lip thickness and no expression." },
+                { name: "Cheek Balance", prompt: "Even out cheek fullness and facial planes so both sides of the face receive equal volume and lighting, avoiding contour exaggeration." },
+                { name: "Eye Openness", prompt: "Ensure both eyes are equally open, alert, and clear, removing droopiness or squinting while keeping a natural look." },
+                { name: "Chin & Neck Posture", prompt: "Correct chin angle and neck posture so the chin is not raised or tucked, maintaining a clean jaw-to-neck separation." },
+                { name: "Ear Visibility", prompt: "Balance ear visibility on both sides where visible, ensuring no excessive cropping or obstruction by hair." }
             ]
         };
 

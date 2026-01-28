@@ -6,9 +6,11 @@ Flask-based web app for passport photo processing
 
 import warnings
 import os
+import json
 import uuid
 import logging
 import traceback
+from datetime import datetime
 from pathlib import Path
 
 os.environ['ORT_LOGGING_LEVEL'] = '3'
@@ -251,6 +253,17 @@ def process():
             result.ai_sheet.save(ai_sheet_path, 'JPEG', quality=95, dpi=(DPI, DPI))
             response_data['ai_sheet_url'] = f'/output/{output_id}/{format_key}_ai_sheet.jpg'
 
+        # Save metadata for history
+        meta = {
+            'format_key': format_key,
+            'format_name': fmt.name,
+            'size': fmt.description,
+            'timestamp': datetime.now().isoformat(),
+            'has_ai': result.ai_photo is not None,
+        }
+        with open(str(output_dir / 'meta.json'), 'w') as f:
+            json.dump(meta, f)
+
         logger.info(f"Processing successful: {output_id}")
         return jsonify(response_data)
 
@@ -332,6 +345,77 @@ def gpu_info():
         'flux_mode': enhancer_info['mode'],
         'flux_mode_short': enhancer_info['mode_short'],
     })
+
+
+# =============================================================================
+# HISTORY
+# =============================================================================
+
+@app.route('/history')
+def history_page():
+    return render_template('history.html')
+
+
+@app.route('/api/history')
+def history_api():
+    entries = []
+    if not OUTPUT_BASE.exists():
+        return jsonify(entries)
+
+    for folder in OUTPUT_BASE.iterdir():
+        if not folder.is_dir():
+            continue
+        output_id = folder.name
+
+        # Read metadata
+        meta_path = folder / 'meta.json'
+        if meta_path.exists():
+            with open(str(meta_path)) as f:
+                meta = json.load(f)
+        else:
+            # Fallback for old outputs without meta.json
+            meta = {'format_key': '', 'format_name': 'Unknown', 'size': '', 'has_ai': False}
+            # Use folder modification time as timestamp
+            meta['timestamp'] = datetime.fromtimestamp(folder.stat().st_mtime).isoformat()
+
+        # Find all image files in the folder
+        files = [f.name for f in folder.iterdir() if f.suffix.lower() in ('.jpg', '.jpeg', '.png')]
+        if not files:
+            continue
+
+        # Detect format key from filenames
+        format_key = meta.get('format_key', '')
+        if not format_key:
+            for f in files:
+                if '_photo.jpg' in f:
+                    format_key = f.replace('_photo.jpg', '')
+                    break
+
+        # Build file URLs
+        photo_url = f'/output/{output_id}/{format_key}_photo.jpg' if f'{format_key}_photo.jpg' in files else None
+        sheet_url = f'/output/{output_id}/{format_key}_sheet.jpg' if f'{format_key}_sheet.jpg' in files else None
+        ai_photo_url = f'/output/{output_id}/{format_key}_ai_photo.jpg' if f'{format_key}_ai_photo.jpg' in files else None
+        ai_sheet_url = f'/output/{output_id}/{format_key}_ai_sheet.jpg' if f'{format_key}_ai_sheet.jpg' in files else None
+
+        if not photo_url:
+            continue
+
+        entries.append({
+            'output_id': output_id,
+            'format_key': format_key,
+            'format_name': meta.get('format_name', format_key),
+            'size': meta.get('size', ''),
+            'timestamp': meta.get('timestamp', ''),
+            'has_ai': meta.get('has_ai', False),
+            'photo_url': photo_url,
+            'sheet_url': sheet_url,
+            'ai_photo_url': ai_photo_url,
+            'ai_sheet_url': ai_sheet_url,
+        })
+
+    # Sort by timestamp descending (newest first)
+    entries.sort(key=lambda e: e.get('timestamp', ''), reverse=True)
+    return jsonify(entries)
 
 
 # =============================================================================

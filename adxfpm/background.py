@@ -92,7 +92,7 @@ class BackgroundRemover:
         if not self._force_cpu:
             try:
                 self._session = new_session(
-                    model_name="birefnet-general",
+                    model_name="birefnet-portrait",
                     providers=[
                         ('CUDAExecutionProvider', {
                             'device_id': 0,
@@ -102,15 +102,15 @@ class BackgroundRemover:
                         'CPUExecutionProvider'
                     ]
                 )
-                logger.info("Rembg session initialized with CUDA (birefnet-general)")
+                logger.info("Rembg session initialized with CUDA (birefnet-portrait)")
                 return
             except Exception as e:
                 logger.warning(f"CUDA initialization failed: {e}")
                 logger.info("Falling back to CPU...")
 
         try:
-            self._session = new_session(model_name="birefnet-general")
-            logger.info("Rembg session initialized with CPU (birefnet-general)")
+            self._session = new_session(model_name="birefnet-portrait")
+            logger.info("Rembg session initialized with CPU (birefnet-portrait)")
         except Exception as e:
             logger.error(f"Failed to initialize rembg session: {e}")
             logger.error(traceback.format_exc())

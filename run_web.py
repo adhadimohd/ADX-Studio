@@ -7,6 +7,10 @@ Run this script to start the web server
 import warnings
 import os
 
+# Load .env file if present
+from dotenv import load_dotenv
+load_dotenv()
+
 # Suppress warnings before imports
 os.environ['ORT_LOGGING_LEVEL'] = '3'
 warnings.filterwarnings('ignore')

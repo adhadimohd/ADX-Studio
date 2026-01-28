@@ -12,6 +12,7 @@ venv/
 
 # Runtime directories
 outputs/
+output/
 uploads/
 logs/
 input/
