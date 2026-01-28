@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADX FPM - Passport Photo Processor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #00d2ff;
+            background: rgba(0, 210, 255, 0.1);
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .drop-zone p {
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone .formats {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        /* Preview */
+        .preview-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .preview-container.show {
+            display: block;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .preview-info .filename {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .btn-remove {
+            background: #ff4757;
+            border: none;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        /* Format Selection */
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .format-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .format-option:hover {
+            border-color: rgba(0, 210, 255, 0.5);
+            background: rgba(0, 210, 255, 0.1);
+        }
+
+        .format-option.selected {
+            border-color: #00d2ff;
+            background: rgba(0, 210, 255, 0.2);
+        }
+
+        .format-option .format-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .format-option .format-size {
+            color: #888;
+            font-size: 0.75rem;
+        }
+
+        .format-option .format-bg {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .format-option .format-bg.white {
+            background: #fff;
+        }
+
+        .format-option .format-bg.blue {
+            background: #007fff;
+        }
+
+        /* Enhancement Section */
+        .enhance-section {
+            margin-top: 25px;
+        }
+
+        .enhance-mode-grid {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .enhance-mode-option {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .enhance-mode-option:hover {
+            border-color: rgba(138, 43, 226, 0.5);
+            background: rgba(138, 43, 226, 0.1);
+        }
+
+        .enhance-mode-option.selected {
+            border-color: #8a2be2;
+            background: rgba(138, 43, 226, 0.2);
+        }
+
+        .enhance-mode-option .mode-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .enhance-mode-option .mode-desc {
+            color: #888;
+            font-size: 0.75rem;
+            margin-top: 3px;
+        }
+
+        .prompt-container {
+            display: none;
+        }
+
+        .prompt-container.show {
+            display: block;
+        }
+
+        .prompt-label {
+            display: block;
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        /* Fine Adjustment Sliders */
+        .adjustment-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+        }
+
+        .slider-row + .slider-row {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .slider-label {
+            min-width: 110px;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .slider-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .adj-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .adj-btn:hover {
+            background: rgba(0, 210, 255, 0.25);
+        }
+
+        .slider-control input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            cursor: pointer;
+        }
+
+        .slider-value {
+            min-width: 42px;
+            text-align: right;
+            font-size: 0.8rem;
+            color: #aaa;
+            font-family: monospace;
+        }
+
+        .slider-reset {
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 2px 4px;
+        }
+
+        .slider-reset:hover {
+            color: #e94560;
+        }
+
+        .prompt-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Retouch Panel Styles */
+        .retouch-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .retouch-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .retouch-tab {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            color: #aaa;
+        }
+
+        .retouch-tab:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .retouch-tab.active {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            color: #fff;
+        }
+
+        .retouch-content {
+            display: none;
+        }
+
+        .retouch-content.active {
+            display: block;
+        }
+
+        .retouch-options {
+            display: grid;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .retouch-options::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .retouch-options::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .retouch-options::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .retouch-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .retouch-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .retouch-option.selected {
+            background: rgba(0, 210, 255, 0.15);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+        }
+
+        .retouch-option input[type="checkbox"] {
+            margin-top: 3px;
+            accent-color: #00d2ff;
+        }
+
+        .retouch-option-content {
+            flex: 1;
+        }
+
+        .retouch-option-name {
+            font-size: 0.9rem;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+
+        .retouch-option-desc {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.3;
+        }
+
+        /* Preserve Integrity Option */
+        .preserve-integrity-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 152, 0, 0.1));
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+
+        .preserve-integrity-option:hover {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.15));
+        }
+
+        .preserve-integrity-option.selected {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.25), rgba(255, 152, 0, 0.2));
+            border-color: rgba(255, 193, 7, 0.5);
+        }
+
+        .preserve-integrity-option input[type="checkbox"] {
+            margin-top: 3px;
+            accent-color: #ffc107;
+            width: 18px;
+            height: 18px;
+        }
+
+        .preserve-integrity-content {
+            flex: 1;
+        }
+
+        .preserve-integrity-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffc107;
+            margin-bottom: 4px;
+        }
+
+        .preserve-integrity-desc {
+            font-size: 0.8rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: #8a2be2;
+        }
+
+        .prompt-input::placeholder {
+            color: #666;
+        }
+
+        /* Process Button */
+        .btn-process {
+            width: 100%;
+            padding: 15px;
+            margin-top: 25px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-process:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3);
+        }
+
+        .btn-process:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00d2ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results */
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .result-item h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #00d2ff;
+        }
+
+        .result-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            background: rgba(0, 210, 255, 0.2);
+            border: 1px solid #00d2ff;
+            border-radius: 6px;
+            color: #00d2ff;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:hover {
+            background: #00d2ff;
+            color: #000;
+        }
+
+        .btn-action.btn-email {
+            background: rgba(138, 43, 226, 0.2);
+            border-color: #8a2be2;
+            color: #8a2be2;
+        }
+
+        .btn-action.btn-email:hover {
+            background: #8a2be2;
+            color: #fff;
+        }
+
+        .btn-action.btn-print {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: #2ecc71;
+            color: #2ecc71;
+        }
+
+        .btn-action.btn-print:hover {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        .btn-new {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-new:hover {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* AI Badge */
+        .ai-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #8a2be2, #00d2ff);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Sheet Tabs */
+        .sheet-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .sheet-tab {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #aaa;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .sheet-tab:hover {
+            border-color: rgba(0, 210, 255, 0.5);
+            color: #fff;
+        }
+
+        .sheet-tab.active {
+            border-color: #00d2ff;
+            background: rgba(0, 210, 255, 0.2);
+            color: #fff;
+        }
+
+        .sheet-tab.ai-tab {
+            border-color: rgba(138, 43, 226, 0.3);
+        }
+
+        .sheet-tab.ai-tab:hover {
+            border-color: rgba(138, 43, 226, 0.5);
+        }
+
+        .sheet-tab.ai-tab.active {
+            border-color: #8a2be2;
+            background: rgba(138, 43, 226, 0.2);
+        }
+
+        .sheet-content {
+            display: none;
+        }
+
+        .sheet-content.active {
+            display: block;
+        }
+
+        .photo-content {
+            display: none;
+        }
+
+        .photo-content.active {
+            display: block;
+        }
+
+        /* Photos Grid */
+        .photos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .photos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Error */
+        .error {
+            display: none;
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid #ff4757;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #ff4757;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .error-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-message {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .error-details {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #ffa0a0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .error-toggle {
+            background: transparent;
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            color: #ff4757;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-top: 8px;
+        }
+
+        .error-toggle:hover {
+            background: rgba(255, 71, 87, 0.2);
+        }
+
+        .error-details-container {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .error-details-container.show {
+            display: block;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Email Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #00d2ff;
+        }
+
+        .modal-content input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-content input[type="email"]:focus {
+            outline: none;
+            border-color: #00d2ff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-modal-cancel {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
+
+        .btn-modal-send {
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border: none;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ADX FPM</h1>
+            <p>Passport Photo Processor - AI-Powered Background Removal & Enhancement</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel - Upload & Settings -->
+            <div class="card">
+                <h2>1. Upload Photo</h2>
+
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">📷</div>
+                    <p>Drag & drop your photo here</p>
+                    <p>or click to browse</p>
+                    <p class="formats">Supports: JPG, PNG, WEBP</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <img class="preview-image" id="previewImage" alt="Preview">
+                    <div class="preview-info">
+                        <span class="filename" id="fileName"></span>
+                        <button class="btn-remove" id="btnRemove">Remove</button>
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 25px;">2. Select Format</h2>
+
+                <div class="format-grid" id="formatGrid">
+                    {% for key, format in formats.items() %}
+                    <div class="format-option {% if key == 'malaysia' %}selected{% endif %}" data-format="{{ key }}" data-sheet="{{ format.sheet_inches }}">
+                        <div class="format-name">{{ format.name }}</div>
+                        <div class="format-size">{{ format.size }}</div>
+                        <div class="format-bg {{ format.bg_color }}"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h2 style="margin-top: 25px;">3. Fine Adjustments</h2>
+                <div class="adjustment-section">
+                    <div class="slider-row">
+                        <span class="slider-label">Brightness</span>
+                        <div class="slider-control">
+                            <button class="adj-btn" onclick="adjStep('brightness',-1)">−</button>
+                            <input type="range" id="adj_brightness" min="-100" max="100" value="0" step="1" oninput="adjUpdate('brightness')">
+                            <button class="adj-btn" onclick="adjStep('brightness',1)">+</button>
+                            <span class="slider-value" id="val_brightness">0</span>
+                            <button class="slider-reset" onclick="adjReset('brightness')" title="Reset">&#x21ba;</button>
+                        </div>
+                    </div>
+                    <div class="slider-row">
+                        <span class="slider-label">Rotation</span>
+                        <div class="slider-control">
+                            <button class="adj-btn" onclick="adjStep('rotation',-0.5)">−</button>
+                            <input type="range" id="adj_rotation" min="-15" max="15" value="0" step="0.5" oninput="adjUpdate('rotation')">
+                            <button class="adj-btn" onclick="adjStep('rotation',0.5)">+</button>
+                            <span class="slider-value" id="val_rotation">0°</span>
+                            <button class="slider-reset" onclick="adjReset('rotation')" title="Reset">&#x21ba;</button>
+                        </div>
+                    </div>
+                    <div class="slider-row">
+                        <span class="slider-label">Face Scale</span>
+                        <div class="slider-control">
+                            <button class="adj-btn" onclick="adjStep('face_scale',-1)">−</button>
+                            <input type="range" id="adj_face_scale" min="-20" max="20" value="0" step="1" oninput="adjUpdate('face_scale')">
+                            <button class="adj-btn" onclick="adjStep('face_scale',1)">+</button>
+                            <span class="slider-value" id="val_face_scale">0%</span>
+                            <button class="slider-reset" onclick="adjReset('face_scale')" title="Reset">&#x21ba;</button>
+                        </div>
+                    </div>
+                    <div class="slider-row">
+                        <span class="slider-label">Nose Position</span>
+                        <div class="slider-control">
+                            <button class="adj-btn" onclick="adjStep('nose_offset',-1)">−</button>
+                            <input type="range" id="adj_nose_offset" min="-20" max="20" value="0" step="1" oninput="adjUpdate('nose_offset')">
+                            <button class="adj-btn" onclick="adjStep('nose_offset',1)">+</button>
+                            <span class="slider-value" id="val_nose_offset">0%</span>
+                            <button class="slider-reset" onclick="adjReset('nose_offset')" title="Reset">&#x21ba;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="enhance-section">
+                    <h2>4. AI Enhancement (Optional)</h2>
+
+                    <div class="enhance-mode-grid" id="enhanceModeGrid">
+                        <div class="enhance-mode-option selected" data-mode="none">
+                            <div class="mode-name">None</div>
+                            <div class="mode-desc">No AI changes</div>
+                        </div>
+                        <div class="enhance-mode-option" data-mode="retouch">
+                            <div class="mode-name">Retouch</div>
+                            <div class="mode-desc">Portrait enhancement</div>
+                        </div>
+                    </div>
+
+                    <!-- Retouch Options Panel -->
+                    <div class="retouch-panel" id="retouchPanel" style="display: none;">
+                        <div class="retouch-tabs">
+                            <div class="retouch-tab active" data-tab="facial" onclick="switchRetouchTab('facial')">Facial</div>
+                            <div class="retouch-tab" data-tab="hair" onclick="switchRetouchTab('hair')">Hair</div>
+                            <div class="retouch-tab" data-tab="eyes" onclick="switchRetouchTab('eyes')">Eyes</div>
+                            <div class="retouch-tab" data-tab="clothing" onclick="switchRetouchTab('clothing')">Clothing</div>
+                            <div class="retouch-tab" data-tab="lighting" onclick="switchRetouchTab('lighting')">Lighting</div>
+                        </div>
+
+                        <!-- Preserve Integrity Option (always visible) -->
+                        <label class="preserve-integrity-option" id="preserveIntegrityOption">
+                            <input type="checkbox" id="preserveIntegrityCheck" checked onchange="togglePreserveIntegrity(this.checked)">
+                            <div class="preserve-integrity-content">
+                                <div class="preserve-integrity-name">Preserve Facial Integrity</div>
+                                <div class="preserve-integrity-desc">Maintain original facial structure, bone structure, and proportions without warping or reshaping</div>
+                            </div>
+                        </label>
+
+                        <!-- Facial Tab -->
+                        <div class="retouch-content active" id="facialContent">
+                            <div class="retouch-options" id="facialOptions"></div>
+                        </div>
+
+                        <!-- Hair Tab -->
+                        <div class="retouch-content" id="hairContent">
+                            <div class="retouch-options" id="hairOptions"></div>
+                        </div>
+
+                        <!-- Eyes Tab -->
+                        <div class="retouch-content" id="eyesContent">
+                            <div class="retouch-options" id="eyesOptions"></div>
+                        </div>
+
+                        <!-- Clothing Tab -->
+                        <div class="retouch-content" id="clothingContent">
+                            <div class="retouch-options" id="clothingOptions"></div>
+                        </div>
+
+                        <!-- Lighting Tab -->
+                        <div class="retouch-content" id="lightingContent">
+                            <div class="retouch-options" id="lightingOptions"></div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-container" id="promptContainer">
+                        <label class="prompt-label">Generated Prompt:</label>
+                        <textarea
+                            class="prompt-input"
+                            id="enhancePrompt"
+                            placeholder="Select options above to build your prompt, or type custom instructions..."
+                        ></textarea>
+                    </div>
+                </div>
+
+                <button class="btn-process" id="btnProcess" disabled>
+                    Process Photo
+                </button>
+
+                <div class="error" id="errorBox">
+                    <div class="error-title"><span>Error</span></div>
+                    <div class="error-message" id="errorMessage"></div>
+                    <button class="error-toggle" id="errorToggle" onclick="toggleErrorDetails()">Show Details</button>
+                    <div class="error-details-container" id="errorDetailsContainer">
+                        <div class="error-details" id="errorDetails"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="card">
+                <h2>Results</h2>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your photo...</p>
+                    <p style="color: #666; font-size: 0.9rem;" id="loadingText">Detecting face & removing background</p>
+                </div>
+
+                <div class="results" id="results">
+                    <div class="result-header" style="background: rgba(0, 210, 255, 0.1); border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center;">
+                        <div id="resultFormat" style="font-size: 1.3rem; font-weight: 600; color: #00d2ff;"></div>
+                        <div id="resultSize" style="font-size: 1rem; color: #aaa; margin-top: 5px;"></div>
+                    </div>
+
+                    <div class="photos-grid">
+                        <div class="result-item">
+                            <h3>Original Size Passport</h3>
+                            <img class="result-image" id="resultOriginal" alt="Original Size Photo">
+                            <div class="result-actions">
+                                <a class="btn-action" id="downloadOriginal" href="#" download>Download</a>
+                                <button class="btn-action btn-email" onclick="showEmailModal('original')">Email</button>
+                            </div>
+                        </div>
+
+                        <div class="result-item" id="aiPhotoContainer" style="display: none;">
+                            <h3>AI Enhanced<span class="ai-badge">AI</span></h3>
+                            <img class="result-image" id="resultAiPhoto" alt="AI Enhanced Photo">
+                            <div class="result-actions">
+                                <a class="btn-action" id="downloadAiPhoto" href="#" download>Download</a>
+                                <button class="btn-action btn-email" onclick="showEmailModal('ai')">Email</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-item" id="printPhotoContainer">
+                        <h3>Print Size Photo</h3>
+
+                        <!-- Photo Tabs (shown only when AI photo is available) -->
+                        <div class="sheet-tabs" id="photoTabs" style="display: none;">
+                            <div class="sheet-tab active" data-photo="original" onclick="switchPhotoTab('original')">Original</div>
+                            <div class="sheet-tab ai-tab" data-photo="ai" onclick="switchPhotoTab('ai')">AI Enhanced <span class="ai-badge">AI</span></div>
+                        </div>
+
+                        <!-- Original Photo Content -->
+                        <div class="photo-content active" id="originalPhotoContent">
+                            <img class="result-image" id="resultPhoto" alt="Processed Photo">
+                            <div class="result-actions">
+                                <a class="btn-action" id="downloadPhoto" href="#" download>Download</a>
+                                <button class="btn-action btn-email" onclick="showEmailModal('photo')">Email</button>
+                            </div>
+                        </div>
+
+                        <!-- AI Enhanced Photo Content -->
+                        <div class="photo-content" id="aiPhotoContent">
+                            <img class="result-image" id="resultPrintAiPhoto" alt="AI Enhanced Photo">
+                            <div class="result-actions">
+                                <a class="btn-action" id="downloadPrintAiPhoto" href="#" download>Download AI Photo</a>
+                                <button class="btn-action btn-email" onclick="showEmailModal('print_ai_photo')">Email</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-item" id="sheetContainer">
+                        <h3 id="sheetHeading">Print Sheet (4x6 inch)</h3>
+
+                        <!-- Sheet Tabs (shown only when AI sheet is available) -->
+                        <div class="sheet-tabs" id="sheetTabs" style="display: none;">
+                            <div class="sheet-tab active" data-sheet="original" onclick="switchSheetTab('original')">Original</div>
+                            <div class="sheet-tab ai-tab" data-sheet="ai" onclick="switchSheetTab('ai')">AI Enhanced <span class="ai-badge">AI</span></div>
+                        </div>
+
+                        <!-- Original Sheet Content -->
+                        <div class="sheet-content active" id="originalSheetContent">
+                            <img class="result-image" id="resultSheet" alt="Print Sheet">
+                            <div class="result-actions">
+                                <a class="btn-action" id="downloadSheet" href="#" download>Download</a>
+                                <button class="btn-action btn-email" onclick="showEmailModal('sheet')">Email</button>
+                                <button class="btn-action btn-print" onclick="printSheet('original')">Print</button>
+                            </div>
+                        </div>
+
+                        <!-- AI Enhanced Sheet Content -->
+                        <div class="sheet-content" id="aiSheetContent">
+                            <img class="result-image" id="resultAiSheet" alt="AI Enhanced Print Sheet">
+                            <div class="result-actions">
+                                <a class="btn-action" id="downloadAiSheet" href="#" download>Download</a>
+                                <button class="btn-action btn-email" onclick="showEmailModal('ai_sheet')">Email</button>
+                                <button class="btn-action btn-print" onclick="printSheet('ai')">Print</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-new" id="btnNew">Process Another Photo</button>
+                </div>
+
+                <div id="placeholder" style="text-align: center; padding: 50px 20px; color: #666;">
+                    <div style="font-size: 64px; margin-bottom: 15px;">🖼️</div>
+                    <p>Upload a photo and select a format to get started</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            ADX FPM - Passport Photo Processor | Powered by AI
+        </footer>
+    </div>
+
+    <!-- Email Modal -->
+    <div class="modal" id="emailModal">
+        <div class="modal-content">
+            <h3>Send Photo via Email</h3>
+            <input type="email" id="emailInput" placeholder="Enter email address">
+            <input type="hidden" id="emailPhotoType" value="">
+            <div class="modal-buttons">
+                <button class="btn-modal-cancel" onclick="hideEmailModal()">Cancel</button>
+                <button class="btn-modal-send" onclick="sendEmail()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden iframe for printing -->
+    <iframe id="printFrame" style="display: none;"></iframe>
+
+    <script>
+        // Retouch Options Data
+        const retouchOptions = {
+            facial: [
+                { name: "Blemish Removal", prompt: "Remove all acne, pimples, blackheads, and temporary blemishes from the face while preserving natural skin texture and pores." },
+                { name: "Skin Smoothing", prompt: "Gently smooth skin texture to reduce roughness and fine irregularities, but retain natural pore detail and skin micro-shadows for realism." },
+                { name: "Wrinkle Reduction", prompt: "Subtly reduce the appearance of fine lines and wrinkles around the eyes, forehead, and mouth without erasing natural facial expressions or creating a plastic look." },
+                { name: "Dark Circle Correction", prompt: "Lighten dark under-eye circles and soften shadows beneath the eyes to create a refreshed appearance, while maintaining natural skin tone and structure." },
+                { name: "Redness Reduction", prompt: "Reduce facial redness on cheeks, nose, and forehead caused by irritation or rosacea, blending tones to achieve a calm, even complexion." },
+                { name: "Even Skin Tone", prompt: "Correct uneven skin tone and blotchiness across the face by balancing pigmentation, ensuring a uniform and natural-looking complexion." },
+                { name: "Sunspot Removal", prompt: "Fade or remove dark spots, sunspots, and post-inflammatory hyperpigmentation while preserving surrounding skin texture and tone." },
+                { name: "Pore Minimization", prompt: "Minimize the visual prominence of enlarged pores—especially on the nose and cheeks—without over-smoothing or making skin appear waxy." },
+                { name: "Shine Control", prompt: "Remove excess shine and oily highlights from the T-zone (forehead, nose, chin) to create a natural matte finish while keeping skin dimensionality." },
+                { name: "Scar Softening", prompt: "Softens the contrast and depth of acne or minor facial scars to blend them with surrounding skin, without fully erasing them for authenticity." },
+                { name: "Texture Retouching", prompt: "Refine overall skin texture by smoothing dry patches and rough areas while preserving realistic lighting, grain, and fine details." },
+                { name: "Makeup Enhancement", prompt: "Apply subtle digital makeup: even out skin with light foundation, conceal under-eye darkness, and add soft blush—keeping it natural and non-mask-like." },
+                { name: "Facial Contouring", prompt: "Enhance facial definition by subtly adding shadow along the jawline and highlight on cheekbones using only skin tone adjustments—no warping or reshaping." },
+                { name: "Glow Enhancement", prompt: "Add a healthy, dewy glow to the high points of the face (cheekbones, brow bone, cupid's bow) with soft luminosity, simulating hydrated, radiant skin." }
+            ],
+            hair: [
+                { name: "Flyaway Taming", prompt: "Tame stray and flyaway hairs around the hairline and shoulders to create a neat, polished look while preserving natural movement and texture." },
+                { name: "Shine Enhancement", prompt: "Add subtle specular highlights to the hair to simulate healthy shine, especially on the crown and strands catching light—avoid over-glossy or plastic appearance." },
+                { name: "Split End Reduction", prompt: "Visually minimize the appearance of split or frayed ends by softening their contrast and blending them into the hair strands without altering overall hairstyle." },
+                { name: "Color Correction", prompt: "Adjust hair color to be consistent and true-to-life—remove color casts, balance highlights/shadows, and unify tone across all strands." },
+                { name: "Gray Concealment", prompt: "Naturally blend or darken isolated gray or white hairs to match the surrounding hair color, maintaining texture and dimension." },
+                { name: "Density Enhancement", prompt: "Increase the perceived fullness of thinning hair by subtly adding depth and strand detail at the roots and part line—do not generate artificial hair." },
+                { name: "Frizz Reduction", prompt: "Smooth frizzy or static-prone hair sections while retaining natural curl pattern and volume—avoid making hair look flat or overly slicked." },
+                { name: "Hairline Refinement", prompt: "Clean up the hairline by removing stray wisps or uneven edges for a smoother contour, but preserve natural softness and baby hairs." },
+                { name: "Stray Hair Removal", prompt: "Remove individual out-of-place hairs that distract from the main hairstyle, especially near the face or neck, without affecting the overall shape." },
+                { name: "Texture Enhancement", prompt: "Enhance natural hair texture—whether straight, wavy, curly, or coiled—by refining strand definition and contrast while avoiding artificial sharpening." },
+                { name: "Regrowth Blending", prompt: "Blend visible root regrowth (e.g., dark roots under dyed hair) by softening the contrast and gradually transitioning tones for a seamless look." },
+                { name: "Volume Boost", prompt: "Add subtle lift at the roots and enhance silhouette to create more volume, using lighting and shadow—not by distorting hair boundaries." },
+                { name: "Scalp Visibility Reduction", prompt: "Minimize visible scalp in thinning areas by darkening the scalp tone to match hair roots or adding subtle hair-like texture—do not invent full coverage." }
+            ],
+            eyes: [
+                { name: "Red Eye Correction", prompt: "Remove red-eye reflections from pupils caused by flash photography, restoring natural black or dark brown pupil color without affecting iris detail." },
+                { name: "Eye Whitening", prompt: "Brighten the sclera (whites of the eyes) by reducing yellowing, red veins, or mild discoloration—keep results natural, not unnaturally white." },
+                { name: "Dark Circle Reduction", prompt: "Lighten under-eye shadows and reduce the appearance of dark circles while preserving natural skin texture and subtle contours." },
+                { name: "Eye Bag Softening", prompt: "Gently minimize the appearance of mild puffiness or under-eye bags by softening shadows and blending transitions—do not erase natural anatomy." },
+                { name: "Iris Enhancement", prompt: "Enhance the natural color and contrast of the iris to make eyes appear more vivid and defined, without changing the original eye color or adding artificial patterns." },
+                { name: "Catchlight Restoration", prompt: "Add or strengthen natural-looking catchlights (specular highlights) in the eyes to restore liveliness and depth, matching the scene's lighting direction." },
+                { name: "Eye Size Correction", prompt: "Subtly adjust the scale or position of one eye to correct minor asymmetry in size or alignment—preserve natural shape and expression." },
+                { name: "Droopy Eyelid Lift", prompt: "Visually lift slightly hooded or drooping upper eyelids by brightening the lid area and refining the crease—do not warp facial structure." },
+                { name: "Eyelash Cleanup", prompt: "Remove stray or out-of-place eyelashes that cross the eye or blur the iris, and enhance natural lash definition without adding artificial lashes." },
+                { name: "Reflection Cleanup", prompt: "Remove unwanted reflections (e.g., from windows, screens, or lights) in the cornea that distract from the subject's gaze, while keeping natural highlights." },
+                { name: "Bloodshot Reduction", prompt: "Reduce visible redness in the sclera caused by fatigue or irritation by desaturating red tones and smoothing fine vessels—retain subtle realism." },
+                { name: "Moisture Enhancement", prompt: "Add a subtle wet-shine to the cornea to simulate healthy, hydrated eyes—avoid excessive gloss or unnatural sparkle." },
+                { name: "Glasses Glare Removal", prompt: "Remove lens glare or white reflections on eyeglasses while preserving eye visibility and frame integrity—do not reconstruct obscured eye areas unless safe." },
+                { name: "Eye Symmetry", prompt: "Balance slight differences in eye openness, angle, or position to improve facial harmony—apply minimal geometric adjustment with natural blending." }
+            ],
+            clothing: [
+                { name: "Wrinkle Removal", prompt: "Remove visible wrinkles and creases from shirt, blouse, or suit jacket collar and shoulders to create a crisp, professional appearance while preserving fabric texture." },
+                { name: "Collar Alignment", prompt: "Straighten and align shirt or blouse collar so both sides are symmetrical and sit flat against the neck—no twisting or uneven height." },
+                { name: "Stain Cleanup", prompt: "Remove small stains, makeup smudges, or dust spots on the collar, lapel, or visible chest area without altering fabric color or weave." },
+                { name: "Color Cast Correction", prompt: "Correct unnatural color casts on clothing (e.g., green tint from background) to restore true-to-life fabric color under neutral lighting." },
+                { name: "Tie Straightening", prompt: "Straighten a crooked or skewed necktie so it hangs vertically centered, with proper knot alignment and natural drape." },
+                { name: "Lapel Smoothing", prompt: "Smooth sharp or unnatural creases on suit lapels while retaining subtle fold depth and fabric realism." },
+                { name: "Shoulder Seam Adjustment", prompt: "Align visible shoulder seams to appear level and natural—correct minor tilting caused by posture or camera angle." },
+                { name: "Collar Gap Reduction", prompt: "Minimize excessive gap between shirt collar and neck (common in off-the-rack suits) by subtly tightening the fit around the neck without distorting anatomy." },
+                { name: "Fabric Shine Reduction", prompt: "Reduce unnatural glossy highlights on synthetic fabrics (e.g., polyester shirts) to mimic matte, breathable material under studio lighting." },
+                { name: "Tag Removal", prompt: "Remove any visible clothing tags, brand logos, or care labels peeking above the collar line." },
+                { name: "Undershirt Elimination", prompt: "Remove or darken a visible white undershirt collar showing above the main shirt—blend seamlessly into the neckline." },
+                { name: "Lint Removal", prompt: "Remove stray threads, lint, or pet hair from shoulders, lapels, or chest area for a clean, polished look." },
+                { name: "Pilling Reduction", prompt: "Minimize the appearance of fabric pilling on wool or knit sweaters by softening texture without over-smoothing." },
+                { name: "Button Alignment", prompt: "Ensure jacket buttons are centered and aligned vertically; if unbuttoned, maintain natural lapel spread." },
+                { name: "Logo Removal", prompt: "Discreetly remove or blur small logos, embroidery, or branding on collars or chest that violate professional headshot guidelines." }
+            ],
+            lighting: [
+                { name: "Flat Lighting Fix", prompt: "Replace flat, shadowless lighting with dimensional studio lighting by adding subtle shadows under the chin, nose, and jawline to restore natural facial depth." },
+                { name: "Butterfly Lighting", prompt: "Enhance existing lighting to match classic butterfly (Paramount) style: create a centered shadow under the nose pointing downward, with symmetrical cheek highlights and soft fill under the chin." },
+                { name: "Loop Lighting", prompt: "Refine facial lighting to achieve loop lighting: position a soft shadow from the nose that loops down toward the corner of the mouth, with gentle modeling on the cheek." },
+                { name: "Rembrandt Lighting", prompt: "Transform current lighting into Rembrandt style: create a distinct triangle of light on the shadowed cheek, with dramatic but balanced contrast between key and fill sides." },
+                { name: "Split Lighting", prompt: "Convert lighting to split portrait style: evenly divide the face into lit and shadowed halves, with a crisp but natural transition along the nose and forehead centerline." },
+                { name: "High-Key Lighting", prompt: "Convert the headshot to high-key lighting: brighten overall exposure, minimize shadows, and create a clean, airy, low-contrast look with pure white or light gray background." },
+                { name: "Low-Key Lighting", prompt: "Transform the image into low-key lighting: deepen shadows, increase contrast, and retain only essential highlights on one side of the face for dramatic, cinematic mood." },
+                { name: "Rim Light Addition", prompt: "Add a subtle rim light along the edge of the hair and shoulder opposite the key light to separate the subject from the background and enhance dimensionality." },
+                { name: "Hair Light Enhancement", prompt: "Strengthen or add a dedicated hair light to create a soft highlight along the top and back of the hair, improving separation from the background without overexposing." },
+                { name: "Catchlight Fix", prompt: "Ensure consistent, natural-looking catchlights in both eyes that match the direction and shape of the simulated key light source (e.g., softbox rectangle or octa round)." },
+                { name: "Fill Light Balance", prompt: "Adjust fill light intensity to reduce harsh shadows while preserving lighting style—avoid flattening; maintain at least 2:1 key-to-fill ratio for dimension." },
+                { name: "Window Light Simulation", prompt: "Re-light the portrait to mimic soft, directional natural window light: diffused key from one side, gentle fill from bounce, cool ambient tone, soft shadows." },
+                { name: "Three-Point Lighting", prompt: "Apply professional three-point lighting: key light at 45°, fill light opposite to soften shadows, and backlight/rim to separate subject—balance all for studio-quality clarity." },
+                { name: "Soft Beauty Lighting", prompt: "Apply soft, frontal beauty lighting: large diffused source slightly above eye level, minimal shadows, even skin illumination, ideal for corporate or model headshots." },
+                { name: "Golden Hour Warmth", prompt: "Infuse warm, golden-hour lighting tones: soft directional light with amber hue, long gentle shadows, and luminous skin glow—without altering pose or background." }
+            ]
+        };
+
+        // Track selected prompts
+        let selectedPrompts = new Set();
+
+        // Preserve Integrity prompt (declared early for use in updatePromptBox)
+        const preserveIntegrityPrompt = "Preserve the original facial structure, bone structure, and proportions exactly as they are. Maintain consistent head shape, jawline, eye spacing, nose placement, and overall face geometry without altering the underlying facial anatomy or identity. Avoid warping, stretching, or reshaping the face.";
+        let preserveIntegrityEnabled = true; // Default checked
+
+        // Initialize retouch options
+        function initRetouchOptions() {
+            for (const [category, options] of Object.entries(retouchOptions)) {
+                const container = document.getElementById(`${category}Options`);
+                if (!container) continue;
+
+                container.innerHTML = options.map((opt, index) => `
+                    <label class="retouch-option" data-category="${category}" data-index="${index}">
+                        <input type="checkbox" onchange="toggleRetouchOption('${category}', ${index}, this.checked)">
+                        <div class="retouch-option-content">
+                            <div class="retouch-option-name">${opt.name}</div>
+                            <div class="retouch-option-desc">${opt.prompt.substring(0, 80)}...</div>
+                        </div>
+                    </label>
+                `).join('');
+            }
+        }
+
+        // Switch retouch tabs
+        function switchRetouchTab(tab) {
+            document.querySelectorAll('.retouch-tab').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.retouch-tab[data-tab="${tab}"]`).classList.add('active');
+
+            document.querySelectorAll('.retouch-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${tab}Content`).classList.add('active');
+        }
+
+        // Toggle retouch option
+        function toggleRetouchOption(category, index, checked) {
+            const option = retouchOptions[category][index];
+            const optionEl = document.querySelector(`.retouch-option[data-category="${category}"][data-index="${index}"]`);
+
+            if (checked) {
+                selectedPrompts.add(option.prompt);
+                optionEl.classList.add('selected');
+            } else {
+                selectedPrompts.delete(option.prompt);
+                optionEl.classList.remove('selected');
+            }
+
+            updatePromptBox();
+        }
+
+        // Update prompt box with selected options
+        function updatePromptBox() {
+            const promptBox = document.getElementById('enhancePrompt');
+            let prompts = [];
+
+            // Add preserve integrity prompt first if enabled
+            if (preserveIntegrityEnabled) {
+                prompts.push(preserveIntegrityPrompt);
+            }
+
+            // Add selected retouch options
+            prompts = prompts.concat(Array.from(selectedPrompts));
+
+            promptBox.value = prompts.join(' ');
+        }
+
+        // Toggle preserve integrity
+        function togglePreserveIntegrity(checked) {
+            preserveIntegrityEnabled = checked;
+            const optionEl = document.getElementById('preserveIntegrityOption');
+            if (checked) {
+                optionEl.classList.add('selected');
+            } else {
+                optionEl.classList.remove('selected');
+            }
+            updatePromptBox();
+        }
+
+        // Clear all selections
+        function clearRetouchSelections() {
+            selectedPrompts.clear();
+            preserveIntegrityEnabled = true; // Reset to default checked
+            document.querySelectorAll('.retouch-option').forEach(el => {
+                el.classList.remove('selected');
+                el.querySelector('input[type="checkbox"]').checked = false;
+            });
+            // Reset preserve integrity checkbox
+            const preserveCheck = document.getElementById('preserveIntegrityCheck');
+            if (preserveCheck) {
+                preserveCheck.checked = true;
+                document.getElementById('preserveIntegrityOption').classList.add('selected');
+            }
+            document.getElementById('enhancePrompt').value = '';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initRetouchOptions();
+            // Initialize preserve integrity as selected
+            document.getElementById('preserveIntegrityOption').classList.add('selected');
+        });
+
+        // Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const fileName = document.getElementById('fileName');
+        const btnRemove = document.getElementById('btnRemove');
+        const formatGrid = document.getElementById('formatGrid');
+        const enhanceModeGrid = document.getElementById('enhanceModeGrid');
+        const promptContainer = document.getElementById('promptContainer');
+        const enhancePrompt = document.getElementById('enhancePrompt');
+        const btnProcess = document.getElementById('btnProcess');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const results = document.getElementById('results');
+        const placeholder = document.getElementById('placeholder');
+        const errorBox = document.getElementById('errorBox');
+        const emailModal = document.getElementById('emailModal');
+
+        let selectedFile = null;
+        let selectedFormat = 'malaysia';
+        let selectedEnhanceMode = 'none';
+        let currentOutputId = null;
+        let currentFormatKey = null;
+        let currentAiSheetUrl = null;
+        let currentSheetUrl = null;
+
+
+        // Fine adjustment helpers
+        const adjSuffix = {brightness: '', rotation: '°', face_scale: '%', nose_offset: '%'};
+
+        function adjUpdate(name) {
+            const el = document.getElementById('adj_' + name);
+            document.getElementById('val_' + name).textContent = el.value + adjSuffix[name];
+        }
+
+        function adjStep(name, delta) {
+            const el = document.getElementById('adj_' + name);
+            const step = parseFloat(el.step);
+            const min = parseFloat(el.min), max = parseFloat(el.max);
+            el.value = Math.min(max, Math.max(min, parseFloat(el.value) + delta * step));
+            adjUpdate(name);
+        }
+
+        function adjReset(name) {
+            document.getElementById('adj_' + name).value = 0;
+            adjUpdate(name);
+        }
+
+        // Placeholder texts for different modes
+        const placeholders = {
+            'none': '',
+            'retouch': 'smooth skin, remove blemishes, brighten eyes, natural look',
+            'change_cloth': 'formal black suit with white shirt and tie'
+        };
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                dropZone.style.display = 'none';
+                previewContainer.classList.add('show');
+                btnProcess.disabled = false;
+                hideError();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        btnRemove.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.classList.remove('show');
+            dropZone.style.display = 'block';
+            btnProcess.disabled = true;
+        });
+
+        // Format selection
+        formatGrid.addEventListener('click', (e) => {
+            const option = e.target.closest('.format-option');
+            if (option) {
+                document.querySelectorAll('.format-option').forEach(el => el.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedFormat = option.dataset.format;
+                const sheet = option.dataset.sheet;
+                if (sheet) {
+                    document.getElementById('sheetHeading').textContent = `Print Sheet (${sheet} inch)`;
+                }
+            }
+        });
+
+        // Enhancement mode selection
+        enhanceModeGrid.addEventListener('click', (e) => {
+            const option = e.target.closest('.enhance-mode-option');
+            if (option) {
+                document.querySelectorAll('.enhance-mode-option').forEach(el => el.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedEnhanceMode = option.dataset.mode;
+
+                const retouchPanel = document.getElementById('retouchPanel');
+
+                // Show/hide prompt input and retouch panel
+                if (selectedEnhanceMode === 'none') {
+                    promptContainer.classList.remove('show');
+                    retouchPanel.style.display = 'none';
+                    clearRetouchSelections();
+                } else if (selectedEnhanceMode === 'retouch') {
+                    retouchPanel.style.display = 'block';
+                    promptContainer.classList.add('show');
+                    enhancePrompt.placeholder = 'Select options above or type custom instructions...';
+                } else {
+                    retouchPanel.style.display = 'none';
+                    promptContainer.classList.add('show');
+                    enhancePrompt.placeholder = placeholders[selectedEnhanceMode] || 'Enter your prompt...';
+                    clearRetouchSelections();
+                }
+            }
+        });
+
+        // Process
+        btnProcess.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            hideError();
+            placeholder.style.display = 'none';
+            results.classList.remove('show');
+            loading.classList.add('show');
+            btnProcess.disabled = true;
+
+            // Update loading text based on enhancement mode
+            if (selectedEnhanceMode !== 'none' && enhancePrompt.value.trim()) {
+                loadingText.textContent = 'Detecting face, removing background & AI enhancement...';
+            } else {
+                loadingText.textContent = 'Detecting face & removing background';
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('format', selectedFormat);
+
+            // Add fine adjustments
+            ['brightness', 'rotation', 'face_scale', 'nose_offset'].forEach(name => {
+                const v = document.getElementById('adj_' + name).value;
+                if (parseFloat(v) !== 0) formData.append(name, v);
+            });
+
+            // Add enhancement options
+            if (selectedEnhanceMode !== 'none') {
+                formData.append('enhance_mode', selectedEnhanceMode);
+                formData.append('enhance_prompt', enhancePrompt.value.trim());
+            }
+
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    // Build detailed error info
+                    let details = `Status: ${response.status}\n`;
+                    details += `Timestamp: ${new Date().toISOString()}\n`;
+                    details += `Format: ${selectedFormat}\n`;
+                    details += `Enhancement: ${selectedEnhanceMode}\n`;
+                    if (data.error_type) details += `Type: ${data.error_type}\n`;
+                    if (data.error_details) details += `\nDetails:\n${data.error_details}`;
+
+                    showError(data.error, details);
+                    loading.classList.remove('show');
+                    placeholder.style.display = 'block';
+                    btnProcess.disabled = false;
+                    return;
+                }
+
+                // Store for email/print
+                currentOutputId = data.output_id;
+                currentFormatKey = selectedFormat;
+
+                // Show results
+                document.getElementById('resultFormat').textContent = data.format;
+                document.getElementById('resultSize').textContent = 'Print Size: ' + data.size + (data.original_size ? ' | Original: ' + data.original_size : '');
+
+                // Original size photo
+                document.getElementById('resultOriginal').src = data.original_url;
+                document.getElementById('downloadOriginal').href = data.original_url.replace('/output/', '/download/');
+
+                // Print size photo
+                document.getElementById('resultPhoto').src = data.photo_url;
+                document.getElementById('downloadPhoto').href = data.photo_url.replace('/output/', '/download/');
+
+                // Sheet
+                currentSheetUrl = data.sheet_url;
+                document.getElementById('resultSheet').src = data.sheet_url;
+                document.getElementById('downloadSheet').href = data.sheet_url.replace('/output/', '/download/');
+
+                // AI Enhanced photo (if available)
+                const aiContainer = document.getElementById('aiPhotoContainer');
+                const photoTabs = document.getElementById('photoTabs');
+                if (data.ai_photo_url) {
+                    // Original AI photo container (cutout view)
+                    document.getElementById('resultAiPhoto').src = data.ai_photo_url;
+                    document.getElementById('downloadAiPhoto').href = data.ai_photo_url.replace('/output/', '/download/');
+                    aiContainer.style.display = 'block';
+
+                    // Print size AI photo tabs
+                    document.getElementById('resultPrintAiPhoto').src = data.ai_photo_url;
+                    document.getElementById('downloadPrintAiPhoto').href = data.ai_photo_url.replace('/output/', '/download/');
+                    photoTabs.style.display = 'flex';
+                    // Reset to original tab
+                    switchPhotoTab('original');
+                } else {
+                    aiContainer.style.display = 'none';
+                    photoTabs.style.display = 'none';
+                }
+
+                // AI Enhanced sheet (if available)
+                const sheetTabs = document.getElementById('sheetTabs');
+                if (data.ai_sheet_url) {
+                    currentAiSheetUrl = data.ai_sheet_url;
+                    document.getElementById('resultAiSheet').src = data.ai_sheet_url;
+                    document.getElementById('downloadAiSheet').href = data.ai_sheet_url.replace('/output/', '/download/');
+                    sheetTabs.style.display = 'flex';
+                    // Reset to original tab
+                    switchSheetTab('original');
+                } else {
+                    currentAiSheetUrl = null;
+                    sheetTabs.style.display = 'none';
+                }
+
+                loading.classList.remove('show');
+                results.classList.add('show');
+
+            } catch (err) {
+                let details = `Error: ${err.message}\n`;
+                details += `Timestamp: ${new Date().toISOString()}\n`;
+                details += `Format: ${selectedFormat}\n`;
+                details += `Enhancement: ${selectedEnhanceMode}\n`;
+                if (err.stack) details += `\nStack:\n${err.stack}`;
+
+                showError('An error occurred. Please try again.', details);
+                loading.classList.remove('show');
+                placeholder.style.display = 'block';
+            }
+
+            btnProcess.disabled = false;
+        });
+
+        // New photo
+        document.getElementById('btnNew').addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.classList.remove('show');
+            dropZone.style.display = 'block';
+            results.classList.remove('show');
+            placeholder.style.display = 'block';
+            btnProcess.disabled = true;
+
+            // Reset enhancement
+            selectedEnhanceMode = 'none';
+            document.querySelectorAll('.enhance-mode-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector('.enhance-mode-option[data-mode="none"]').classList.add('selected');
+            promptContainer.classList.remove('show');
+            enhancePrompt.value = '';
+
+            // Hide retouch panel and clear selections
+            document.getElementById('retouchPanel').style.display = 'none';
+            clearRetouchSelections();
+
+            // Hide AI container and reset tabs
+            document.getElementById('aiPhotoContainer').style.display = 'none';
+            document.getElementById('sheetTabs').style.display = 'none';
+            document.getElementById('photoTabs').style.display = 'none';
+            currentAiSheetUrl = null;
+            currentSheetUrl = null;
+            switchSheetTab('original');
+            switchPhotoTab('original');
+        });
+
+        // Email functions
+        function showEmailModal(photoType) {
+            document.getElementById('emailPhotoType').value = photoType;
+            document.getElementById('emailInput').value = '';
+            emailModal.classList.add('show');
+        }
+
+        function hideEmailModal() {
+            emailModal.classList.remove('show');
+        }
+
+        function sendEmail() {
+            const email = document.getElementById('emailInput').value.trim();
+            const photoType = document.getElementById('emailPhotoType').value;
+
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            // Determine which file to email
+            let filename;
+            switch (photoType) {
+                case 'original':
+                    filename = `${currentFormatKey}_original.jpg`;
+                    break;
+                case 'ai':
+                    filename = `${currentFormatKey}_ai_photo.jpg`;
+                    break;
+                case 'photo':
+                    filename = `${currentFormatKey}_photo.jpg`;
+                    break;
+                case 'sheet':
+                    filename = `${currentFormatKey}_sheet.jpg`;
+                    break;
+                case 'ai_sheet':
+                    filename = `${currentFormatKey}_ai_sheet.jpg`;
+                    break;
+            }
+
+            // Open mailto link with attachment info
+            const subject = encodeURIComponent('Your Passport Photo from ADX FPM');
+            const body = encodeURIComponent(`Your passport photo is attached.\n\nFormat: ${document.getElementById('resultFormat').textContent}\n\nDownload link: ${window.location.origin}/download/${currentOutputId}/${filename}`);
+
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+            hideEmailModal();
+        }
+
+        // Sheet tab switching
+        function switchSheetTab(tab) {
+            // Update tab active state
+            document.querySelectorAll('#sheetTabs .sheet-tab').forEach(el => el.classList.remove('active'));
+            document.querySelector(`#sheetTabs .sheet-tab[data-sheet="${tab}"]`).classList.add('active');
+
+            // Update content visibility
+            document.getElementById('originalSheetContent').classList.toggle('active', tab === 'original');
+            document.getElementById('aiSheetContent').classList.toggle('active', tab === 'ai');
+        }
+
+        function switchPhotoTab(tab) {
+            // Update tab active state
+            document.querySelectorAll('#photoTabs .sheet-tab').forEach(el => el.classList.remove('active'));
+            document.querySelector(`#photoTabs .sheet-tab[data-photo="${tab}"]`).classList.add('active');
+
+            // Update content visibility
+            document.getElementById('originalPhotoContent').classList.toggle('active', tab === 'original');
+            document.getElementById('aiPhotoContent').classList.toggle('active', tab === 'ai');
+        }
+
+        // Print function
+        function printSheet(type = 'original') {
+            const sheetUrl = type === 'ai' ? currentAiSheetUrl : currentSheetUrl;
+            if (!sheetUrl) {
+                alert('No sheet available to print');
+                return;
+            }
+
+            const printFrame = document.getElementById('printFrame');
+
+            printFrame.onload = function() {
+                setTimeout(() => {
+                    printFrame.contentWindow.print();
+                }, 500);
+            };
+
+            printFrame.srcdoc = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        @page { size: 4in 6in; margin: 0; }
+                        body { margin: 0; padding: 0; }
+                        img { width: 100%; height: auto; display: block; }
+                    </style>
+                </head>
+                <body>
+                    <img src="${sheetUrl}" />
+                </body>
+                </html>
+            `;
+        }
+
+        // Error handling
+        function showError(message, details = null) {
+            document.getElementById('errorMessage').textContent = message;
+
+            const detailsContainer = document.getElementById('errorDetailsContainer');
+            const detailsEl = document.getElementById('errorDetails');
+            const toggleBtn = document.getElementById('errorToggle');
+
+            if (details) {
+                detailsEl.textContent = typeof details === 'object' ? JSON.stringify(details, null, 2) : details;
+                toggleBtn.style.display = 'inline-block';
+                detailsContainer.classList.remove('show');
+                toggleBtn.textContent = 'Show Details';
+            } else {
+                toggleBtn.style.display = 'none';
+                detailsContainer.classList.remove('show');
+            }
+
+            errorBox.classList.add('show');
+        }
+
+        function toggleErrorDetails() {
+            const detailsContainer = document.getElementById('errorDetailsContainer');
+            const toggleBtn = document.getElementById('errorToggle');
+
+            if (detailsContainer.classList.contains('show')) {
+                detailsContainer.classList.remove('show');
+                toggleBtn.textContent = 'Show Details';
+            } else {
+                detailsContainer.classList.add('show');
+                toggleBtn.textContent = 'Hide Details';
+            }
+        }
+
+        function hideError() {
+            errorBox.classList.remove('show');
+        }
+
+        // Close modal on outside click
+        emailModal.addEventListener('click', (e) => {
+            if (e.target === emailModal) {
+                hideEmailModal();
+            }
+        });
+    </script>
+</body>
+</html>
